@@ -1,3 +1,4 @@
+import dto.*
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -13,6 +14,9 @@ import io.ktor.util.KtorExperimentalAPI
 import org.kodein.di.generic.bind
 import org.kodein.di.generic.singleton
 import org.kodein.di.ktor.KodeinFeature
+import repository.PostRepository
+import repository.PostRepositoryImpl
+import route.v1
 
 fun main(args: Array<String>) {
     EngineMain.main(args)
@@ -40,7 +44,7 @@ fun Application.module() {
     }
     install(KodeinFeature) {
 
-        bind<PostRepository>() with singleton { PostRepositoryInMemoryWithMutexImpl() }
+        bind<PostRepository>() with singleton { PostRepositoryImpl() }
     }
 
     install(Routing) {
