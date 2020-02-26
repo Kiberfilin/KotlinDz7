@@ -6,23 +6,29 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class PostModel(
-    private val id: Long = 0,
-    private val author: String,
-    private val content: String,
-    private var likeCount: Long = 0L,
-    private var commentCount: Long = 0L,
-    private var shareCount: Long = 0L,
-    private var likedByMe: Boolean = false,
-    private var commentedByMe: Boolean = false,
-    private var sharedByMe: Boolean = false,
-    private val postType: PostType,
-    private val source: Post? = null,
-    private var url: String? = null,
-    private var address: String? = null,
-    private var coordinates: Coordinates? = Coordinates(),
-    private val created: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
-    //private val created: String = LocalDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME)
+    var id: Long = 0,
+    val author: String,
+    val content: String,
+    var likeCount: Long = 0L,
+    var commentCount: Long = 0L,
+    var shareCount: Long = 0L,
+    var likedByMe: Boolean = false,
+    var commentedByMe: Boolean = false,
+    var sharedByMe: Boolean = false,
+    val postType: PostType,
+    var source: Post? = null,
+    var url: String? = null,
+    var address: String? = null,
+    var coordinates: Coordinates? = Coordinates(),
+    var created: String = ""
 ) {
+
+    init {
+        created = createdDateTime()
+    }
+
+    fun createdDateTime(): String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+
     fun getProperPostObject(): Post = when (postType) {
         PostType.POST -> Post(
             id,
@@ -94,3 +100,21 @@ class PostModel(
         else -> throw IllegalArgumentException("Нет такого типа поста!!!")
     }
 }
+
+fun PostModel.copy() = PostModel(
+    this.id,
+    this.author,
+    this.content,
+    this.likeCount,
+    this.commentCount,
+    this.shareCount,
+    this.likedByMe,
+    this.commentedByMe,
+    this.sharedByMe,
+    this.postType,
+    this.source,
+    this.url,
+    this.address,
+    this.coordinates,
+    createdDateTime()
+)

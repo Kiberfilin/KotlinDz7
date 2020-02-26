@@ -2,21 +2,147 @@ package repository
 
 import dto.*
 import dto.posttypes.PostType
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import model.PostModel
+import model.copy
 
 interface PostRepository {
     suspend fun getAll(): List<PostModel>
-    //suspend fun getById(id: Long): PostModel?
-    //suspend fun save(item: PostModel): PostModel
-    //suspend fun removeById(id: Long)
-    //suspend fun likeById(id: Long): PostModel?
-    //suspend fun dislikeById(id: Long): PostModel?
-    //suspend fun repostById(id: Long): PostModel?
-    //suspend fun shareById(id: Long): PostModel?
+    suspend fun getById(id: Long): PostModel?
+    suspend fun create(item: PostModel): PostModel
+    suspend fun update(item: PostModel): PostModel
+    suspend fun removeById(id: Long)
+    suspend fun likeById(id: Long): PostModel?
+    suspend fun dislikeById(id: Long): PostModel?
+    suspend fun repost(item: PostModel): PostModel?
+    suspend fun shareById(id: Long): PostModel?
 }
 
 class PostRepositoryImpl : PostRepository {
-    override suspend fun getAll(): List<PostModel> = testData()
+    private val mutex = Mutex()
+    private val items = mutableListOf<PostModel>()
+    private var lastKnownId: Long = 0L
+
+    init {
+        items.addAll(testData())
+        updateLastKnowhId()
+    }
+
+    private fun updateLastKnowhId() {
+        lastKnownId = items.maxBy { it.id }?.id ?: 0L
+    }
+
+    override suspend fun getAll(): List<PostModel> {
+        mutex.withLock { return items }
+    }
+
+    override suspend fun getById(id: Long): PostModel? {
+        mutex.withLock { return items.find { it.id == id } }
+    }
+
+    override suspend fun create(item: PostModel): PostModel {
+        mutex.withLock {
+            return when (val index = items.indexOfFirst { it.id == item.id }) {
+                -1 -> {
+                    item.id = ++lastKnownId
+                    val finalPostModel = item.copy()
+                    if (items.add(finalPostModel)) {
+                        updateLastKnowhId()
+                        finalPostModel
+                    } else throw IllegalArgumentException("Не получилось сохранить элемент $item")
+                }
+                else -> {
+                    throw IllegalArgumentException("Уже существует такой элемент как $item, вероятно необходимо редактировать этот элемент")
+                }
+            }
+        }
+    }
+
+    override suspend fun update(item: PostModel): PostModel {
+        mutex.withLock {
+            return when (val index = items.indexOfFirst { it.id == item.id }) {
+                -1 -> {
+                    throw IllegalArgumentException("Не существует такого элемента как $item, вероятно необходимо создать этот элемент")
+                }
+                else -> {
+                    val finalPostModel = item.copy()
+                    items[index] = finalPostModel
+                    finalPostModel
+                }
+            }
+        }
+    }
+
+    override suspend fun removeById(id: Long) {
+        mutex.withLock { items.removeIf { it.id == id } }
+    }
+
+    override suspend fun likeById(id: Long): PostModel? {
+        mutex.withLock {
+            return when (val index = items.indexOfFirst { it.id == id }) {
+                -1 -> null
+                else -> {
+                    val item = items[index]
+                    if (!item.likedByMe) {
+                        item.likeCount = ++item.likeCount
+                        item.likedByMe = true
+                    }
+                    item
+                }
+            }
+        }
+    }
+
+    override suspend fun dislikeById(id: Long): PostModel? {
+        mutex.withLock {
+            return when (val index = items.indexOfFirst { it.id == id }) {
+                -1 -> null
+                else -> {
+                    val item = items[index]
+                    if (item.likedByMe && item.likeCount > 0) {
+                        item.likeCount = --item.likeCount
+                        item.likedByMe = false
+                    }
+                    item
+                }
+            }
+        }
+    }
+
+    override suspend fun repost(item: PostModel): PostModel? {
+        //1. Проверить поле source, чтобы оно не было пустым
+        //2. Проверить id поста из поля source, поста с таким id нет, то и репост делать не надо
+        //3. Если всё ок, то сохраняем получившийся репост с нужным id и временем в created
+        mutex.withLock {
+            var result: PostModel? = null
+            with(item) {
+                val properSourcePost = source?.id?.let { getById(it) }?.getProperPostObject()
+                if (source != null && properSourcePost != null) {
+                    id = -1
+                    source = properSourcePost
+                    result = create(this)
+                }
+            }
+            return result
+        }
+    }
+
+    override suspend fun shareById(id: Long): PostModel? {
+        mutex.withLock {
+            return when (val index = items.indexOfFirst { it.id == id }) {
+                -1 -> null
+                else -> {
+                    val item = items[index]
+                    if (!item.sharedByMe) {
+                        item.shareCount = ++item.shareCount
+                        item.sharedByMe = true
+                    }
+                    item
+                }
+            }
+        }
+    }
 }
 
 fun testData() = listOf(
