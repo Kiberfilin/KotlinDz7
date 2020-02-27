@@ -3,6 +3,7 @@ import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
+import io.ktor.features.NotFoundException
 import io.ktor.features.ParameterConversionException
 import io.ktor.features.StatusPages
 import io.ktor.gson.gson
@@ -24,22 +25,29 @@ fun main(args: Array<String>) {
 
 @KtorExperimentalAPI
 fun Application.module() {
-    install(ContentNegotiation){
+    install(ContentNegotiation) {
         gson {
             setPrettyPrinting()
             serializeNulls()
         }
     }
 
-    install(StatusPages){
-        exception<NotImplementedError> {
+    install(StatusPages) {
+        exception<NotImplementedError> { e ->
             call.respond(HttpStatusCode.NotImplemented)
+            throw e
         }
-        exception<ParameterConversionException> {
+        exception<ParameterConversionException> { e ->
             call.respond(HttpStatusCode.BadRequest)
+            throw e
         }
-        exception<Throwable> {
+        exception<Throwable> { e ->
             call.respond(HttpStatusCode.InternalServerError)
+            throw e
+        }
+        exception<NotFoundException> { e ->
+            call.respond(HttpStatusCode.NotFound)
+            throw e
         }
     }
     install(KodeinFeature) {
