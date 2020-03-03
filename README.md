@@ -10,3 +10,4 @@
 - DELETE /api/v1/posts/{id}/likes - убрать лайк с поста с конкретным id
 - POST /api/v1/posts/repost - сделать репост поста, пересылаемого JSONом
 - POST /api/v1/posts/{id}/share - шаринг поста с конкретным id
+* На Heroku залито
