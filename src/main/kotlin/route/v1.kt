@@ -22,7 +22,6 @@ fun Routing.v1() {
                 //println("${it.getProperPostObject()}")
                 it.getProperPostObject()
             }
-
             call.respond(response)
         }
         get("/{id}") {
@@ -37,9 +36,10 @@ fun Routing.v1() {
             val response = repository.create(inputPostModel).getProperPostObject()
             call.respond(response)
         }
-        post("/update") {
+        patch("/{id}/update") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
             val inputPostModel = call.receive<PostModel>()
-            val response = repository.update(inputPostModel).getProperPostObject()
+            val response = repository.update(id, inputPostModel).getProperPostObject()
             call.respond(response)
         }
         delete("/{id}") {

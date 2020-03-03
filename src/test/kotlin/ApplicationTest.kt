@@ -43,6 +43,6 @@ class ApplicationTest {
                 postType = PostType.POST
             )
         )
-        assertEquals(pModel.getProperPostObject().postType, PostType.REPOST)
+        assertEquals(pModel.getProperPostObject()?.postType, PostType.REPOST)
     }
 }

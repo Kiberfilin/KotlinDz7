@@ -2,6 +2,8 @@ package repository
 
 import dto.*
 import dto.posttypes.PostType
+import io.ktor.features.NotFoundException
+import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import model.PostModel
@@ -11,7 +13,7 @@ interface PostRepository {
     suspend fun getAll(): List<PostModel>
     suspend fun getById(id: Long): PostModel?
     suspend fun create(item: PostModel): PostModel
-    suspend fun update(item: PostModel): PostModel
+    suspend fun update(id: Long, item: PostModel): PostModel
     suspend fun removeById(id: Long)
     suspend fun likeById(id: Long): PostModel?
     suspend fun dislikeById(id: Long): PostModel?
@@ -26,10 +28,10 @@ class PostRepositoryImpl : PostRepository {
 
     init {
         items.addAll(testData())
-        updateLastKnowhId()
+        updateLastKnownId()
     }
 
-    private fun updateLastKnowhId() {
+    private fun updateLastKnownId() {
         lastKnownId = items.maxBy { it.id }?.id ?: 0L
     }
 
@@ -43,29 +45,24 @@ class PostRepositoryImpl : PostRepository {
 
     override suspend fun create(item: PostModel): PostModel {
         mutex.withLock {
-            return when (val index = items.indexOfFirst { it.id == item.id }) {
-                -1 -> {
-                    item.id = ++lastKnownId
-                    val finalPostModel = item.copy()
-                    if (items.add(finalPostModel)) {
-                        updateLastKnowhId()
-                        finalPostModel
-                    } else throw IllegalArgumentException("Не получилось сохранить элемент $item")
-                }
-                else -> {
-                    throw IllegalArgumentException("Уже существует такой элемент как $item, вероятно необходимо редактировать этот элемент")
-                }
-            }
+            item.id = ++lastKnownId
+            val finalPostModel = item.copy()
+            if (items.add(finalPostModel)) {
+                updateLastKnownId()
+                return finalPostModel
+            } else throw Throwable("Не получилось сохранить элемент $item")
         }
     }
 
-    override suspend fun update(item: PostModel): PostModel {
+    @KtorExperimentalAPI
+    override suspend fun update(id: Long, item: PostModel): PostModel {
         mutex.withLock {
-            return when (val index = items.indexOfFirst { it.id == item.id }) {
+            return when (val index = items.indexOfFirst { it.id == id }) {
                 -1 -> {
-                    throw IllegalArgumentException("Не существует такого элемента как $item, вероятно необходимо создать этот элемент")
+                    throw NotFoundException("Не существует такого элемента как $item, вероятно необходимо создать этот элемент")
                 }
                 else -> {
+                    item.id = id
                     val finalPostModel = item.copy()
                     items[index] = finalPostModel
                     finalPostModel

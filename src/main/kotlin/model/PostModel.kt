@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class PostModel(
-    var id: Long = 0,
+    var id: Long = 0L,
     val author: String,
     val content: String,
     var likeCount: Long = 0L,

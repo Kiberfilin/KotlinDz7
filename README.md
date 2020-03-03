@@ -4,7 +4,7 @@
 - GET /api/v1/posts - список всех постов
 - GET /api/v1/posts/{id} - получить пост с конкретным id
 - POST /api/v1/posts/create - создать новый пост
-- POST /api/v1/posts/update - отредактировать пост
+- PATCH /api/v1/posts/{id}/update - отредактировать пост
 - DELETE /api/v1/posts/{id} - удалить пост
 - POST /api/v1/posts/{id}/likes - поставить лайк посту с конкретным id
 - DELETE /api/v1/posts/{id}/likes - убрать лайк с поста с конкретным id
