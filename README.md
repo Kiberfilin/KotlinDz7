@@ -11,3 +11,4 @@
 - POST /api/v1/posts/repost - сделать репост поста, пересылаемого JSONом
 - POST /api/v1/posts/{id}/share - шаринг поста с конкретным id
 * На Heroku залито
+* heroku redeploy
