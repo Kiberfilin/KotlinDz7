@@ -1,0 +1,1 @@
+web: ./build/install/KotlinDz7/bin/KotlinDz7
